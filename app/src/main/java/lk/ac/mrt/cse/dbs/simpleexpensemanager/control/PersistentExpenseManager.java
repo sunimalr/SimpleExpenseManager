@@ -22,7 +22,7 @@ public class PersistentExpenseManager extends ExpenseManager{
 
     public void setup() throws ExpenseManagerException {
 
-        SQLiteDatabase db = context.openOrCreateDatabase("SimpleExpManager", context.MODE_PRIVATE, null);
+        SQLiteDatabase db = context.openOrCreateDatabase("180572D", context.MODE_PRIVATE, null);
 
         // create the databases.
         db.execSQL("CREATE TABLE IF NOT EXISTS Account(" +

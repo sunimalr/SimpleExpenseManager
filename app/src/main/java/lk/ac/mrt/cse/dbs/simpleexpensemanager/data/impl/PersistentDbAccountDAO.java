@@ -57,20 +57,25 @@ public class PersistentDbAccountDAO implements AccountDAO {
 
     @Override
     public Account getAccount(String accountNo) throws InvalidAccountException {
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Account account = new Account("", "", "", 0);
-        String[] selectionArgs = {accountNo};
+        try {
+            SQLiteDatabase db = dbHelper.getReadableDatabase();
+            Account account = new Account("", "", "", 0);
+            String[] selectionArgs = {accountNo};
 
-        Cursor cursor = db.rawQuery("SELECT * FROM " + dbHelper.TABLE_NAME_ACCOUNT + " WHERE " + dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " = ?", selectionArgs);
-        if (cursor.moveToFirst()) {
-            String accountNumber = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT));
-            String accountHolder = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_ACCOUNT_HOLDER));
-            String bank = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_BANK));
-            String balance = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_BALANCE));
-            account = new Account(accountNumber, bank, accountHolder, Double.parseDouble(balance));
+            Cursor cursor = db.rawQuery("SELECT * FROM " + dbHelper.TABLE_NAME_ACCOUNT + " WHERE " + dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " = ?", selectionArgs);
+            if (cursor.moveToFirst()) {
+                String accountNumber = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT));
+                String accountHolder = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_ACCOUNT_HOLDER));
+                String bank = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_BANK));
+                String balance = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_BALANCE));
+                account = new Account(accountNumber, bank, accountHolder, Double.parseDouble(balance));
+            }
+            cursor.close();
+            return account;
         }
-        cursor.close();
-        return account;
+        catch (Exception e) {
+            throw new InvalidAccountException("Something went wrong...");
+        }
     }
 
     @Override
@@ -91,28 +96,38 @@ public class PersistentDbAccountDAO implements AccountDAO {
 
     @Override
     public void removeAccount(String accountNo) throws InvalidAccountException {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        String selection = dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " LIKE ?";
-        String[] selectionArgs = { accountNo };
-        int deleteRows = db.delete(dbHelper.TABLE_NAME_TRANSACTION, selection, selectionArgs);
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            String selection = dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " LIKE ?";
+            String[] selectionArgs = {accountNo};
+            int deleteRows = db.delete(dbHelper.TABLE_NAME_TRANSACTION, selection, selectionArgs);
+        }
+        catch (Exception e) {
+            throw new InvalidAccountException("Something went wrong...");
+        }
     }
 
     @Override
     public void updateBalance(String accountNo, ExpenseType expenseType, double amount) throws InvalidAccountException {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        Account account = getAccount(accountNo);
-        switch (expenseType) {
-            case EXPENSE:
-                account.setBalance(account.getBalance() - amount);
-                break;
-            case INCOME:
-                account.setBalance(account.getBalance() + amount);
-                break;
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            Account account = getAccount(accountNo);
+            switch (expenseType) {
+                case EXPENSE:
+                    account.setBalance(account.getBalance() - amount);
+                    break;
+                case INCOME:
+                    account.setBalance(account.getBalance() + amount);
+                    break;
+            }
+            values.put(dbHelper.COLUMN_BALANCE, account.getBalance());
+            String selection = dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " LIKE ?";
+            String[] selectionArgs = {accountNo};
+            int count = db.update(dbHelper.TABLE_NAME_ACCOUNT, values, selection, selectionArgs);
         }
-        values.put(dbHelper.COLUMN_BALANCE, account.getBalance());
-        String selection = dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " LIKE ?";
-        String[] selectionArgs = { accountNo };
-        int count = db.update(dbHelper.TABLE_NAME_ACCOUNT, values, selection, selectionArgs);
+        catch (Exception e) {
+            throw new InvalidAccountException("Something went wrong...");
+        }
     }
 }

@@ -41,7 +41,7 @@ public class ExpenseManagerDbHelper extends SQLiteOpenHelper implements BaseColu
             "DROP TABLE IF EXISTS " + TABLE_NAME_TRANSACTION;
 
     public ExpenseManagerDbHelper(Context context) {
-        super(context, "ExpenseManager.db", null, 1);
+        super(context, "180561T.db", null, 1);
     }
 
     @Override

@@ -16,20 +16,31 @@ public class PersistentDbDemoExpenseManager extends ExpenseManager {
 
     public PersistentDbDemoExpenseManager(ExpenseManagerDbHelper dbHelper) {
         this.dbHelper = dbHelper;
-        setup();
+        try {
+            setup();
+        }
+        catch (ExpenseManagerException e) {
+            Log.e("Error in expenseMngr",e.getMessage());
+        }
+
     }
 
     @Override
-    public void setup() {
-        TransactionDAO transactionDAO = new PersistentDbTransactionDAO(dbHelper);
-        setTransactionsDAO(transactionDAO);
+    public void setup() throws ExpenseManagerException {
+        try {
+            TransactionDAO transactionDAO = new PersistentDbTransactionDAO(dbHelper);
+            setTransactionsDAO(transactionDAO);
 
-        AccountDAO accountDAO = new PersistentDbAccountDAO(dbHelper);
-        setAccountsDAO(accountDAO);
+            AccountDAO accountDAO = new PersistentDbAccountDAO(dbHelper);
+            setAccountsDAO(accountDAO);
 
-        Account dummyAcct1 = new Account("12345A", "Yoda Bank", "Anakin Skywalker", 10000.0);
-        Account dummyAcct2 = new Account("78945Z", "Clone BC", "Obi-Wan Kenobi", 80000.0);
-        getAccountsDAO().addAccount(dummyAcct1);
-        getAccountsDAO().addAccount(dummyAcct2);
+            Account dummyAcct1 = new Account("12345A", "Yoda Bank", "Anakin Skywalker", 10000.0);
+            Account dummyAcct2 = new Account("78945Z", "Clone BC", "Obi-Wan Kenobi", 80000.0);
+            getAccountsDAO().addAccount(dummyAcct1);
+            getAccountsDAO().addAccount(dummyAcct2);
+        }
+        catch (Exception e) {
+            throw new ExpenseManagerException("Something went wrong...");
+        }
     }
 }

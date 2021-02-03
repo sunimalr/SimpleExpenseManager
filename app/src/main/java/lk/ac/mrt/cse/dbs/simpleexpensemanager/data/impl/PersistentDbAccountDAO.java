@@ -17,30 +17,15 @@ import lk.ac.mrt.cse.dbs.simpleexpensemanager.data.sqlite.ExpenseManagerDbHelper
 public class PersistentDbAccountDAO implements AccountDAO {
 
     private ExpenseManagerDbHelper dbHelper;
-    private SQLiteDatabase db;
 
     public PersistentDbAccountDAO(ExpenseManagerDbHelper dbHelper) {
         this.dbHelper = dbHelper;
-        this.db = dbHelper.getWritableDatabase();
     }
 
     @Override
     public List<String> getAccountNumbersList() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
         List<String> accountNumbers = new ArrayList<String>();
-//        String[] projection = {
-//                dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT
-//        };
-
-//        Cursor cursor = db.query(
-//          dbHelper.TABLE_NAME,
-//          projection,
-//          null,
-//          null,
-//          null,
-//          null,
-//          null,
-//          null
-//        );
 
         Cursor cursor = db.rawQuery("SELECT " + dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " FROM " + dbHelper.TABLE_NAME_ACCOUNT, null);
 
@@ -55,24 +40,8 @@ public class PersistentDbAccountDAO implements AccountDAO {
 
     @Override
     public List<Account> getAccountsList() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
         List<Account> accounts = new ArrayList<Account>();
-//        String[] projection = {
-//                dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT,
-//                dbHelper.COLUMN_ACCOUNT_HOLDER,
-//                dbHelper.COLUMN_BALANCE,
-//                dbHelper.COLUMN_BANK,
-//        };
-
-//        Cursor cursor = db.query(
-//                dbHelper.TABLE_NAME,
-//                projection,
-//                null,
-//                null,
-//                null,
-//                null,
-//                null,
-//                null
-//        );
         Cursor cursor = db.rawQuery("SELECT * FROM " + dbHelper.TABLE_NAME_ACCOUNT, null);
 
         while (cursor.moveToNext()) {
@@ -82,46 +51,31 @@ public class PersistentDbAccountDAO implements AccountDAO {
             String balance = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_BALANCE));
             accounts.add(new Account(accountNumber, bank, accountHolder, Double.parseDouble(balance)));
         }
+        cursor.close();
         return accounts;
     }
 
     @Override
     public Account getAccount(String accountNo) throws InvalidAccountException {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
         Account account = new Account("", "", "", 0);
-//        String[] projection = {
-//                dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT,
-//                dbHelper.COLUMN_ACCOUNT_HOLDER,
-//                dbHelper.COLUMN_BALANCE,
-//                dbHelper.COLUMN_BANK,
-//        };
+        String[] selectionArgs = {accountNo};
 
-//        String selection = dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " = ?";
-        String[] selectionArgs = { dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT ,accountNo};
-
-//        Cursor cursor = db.query(
-//                dbHelper.TABLE_NAME,
-//                projection,
-//                selection,
-//                selectionArgs,
-//                null,
-//                null,
-//                null,
-//                null
-//        );
-
-        Cursor cursor = db.rawQuery("SELECT * FROM " + dbHelper.TABLE_NAME_ACCOUNT + " WHERE ? = ?", selectionArgs);
-        while (cursor.moveToNext()) {
+        Cursor cursor = db.rawQuery("SELECT * FROM " + dbHelper.TABLE_NAME_ACCOUNT + " WHERE " + dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " = ?", selectionArgs);
+        if (cursor.moveToFirst()) {
             String accountNumber = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT));
             String accountHolder = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_ACCOUNT_HOLDER));
             String bank = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_BANK));
             String balance = cursor.getString(cursor.getColumnIndexOrThrow(dbHelper.COLUMN_BALANCE));
             account = new Account(accountNumber, bank, accountHolder, Double.parseDouble(balance));
         }
+        cursor.close();
         return account;
     }
 
     @Override
     public void addAccount(Account account) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
         try {
             ContentValues values = new ContentValues();
             values.put(dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT, account.getAccountNo());
@@ -137,6 +91,7 @@ public class PersistentDbAccountDAO implements AccountDAO {
 
     @Override
     public void removeAccount(String accountNo) throws InvalidAccountException {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
         String selection = dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " LIKE ?";
         String[] selectionArgs = { accountNo };
         int deleteRows = db.delete(dbHelper.TABLE_NAME_TRANSACTION, selection, selectionArgs);
@@ -144,6 +99,7 @@ public class PersistentDbAccountDAO implements AccountDAO {
 
     @Override
     public void updateBalance(String accountNo, ExpenseType expenseType, double amount) throws InvalidAccountException {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
         Account account = getAccount(accountNo);
         switch (expenseType) {
@@ -154,9 +110,9 @@ public class PersistentDbAccountDAO implements AccountDAO {
                 account.setBalance(account.getBalance() + amount);
                 break;
         }
-        values.put(dbHelper.COLUMN_AMOUNT, account.getBalance());
+        values.put(dbHelper.COLUMN_BALANCE, account.getBalance());
         String selection = dbHelper.COLUMN_ACCOUNT_NO_ACCOUNT + " LIKE ?";
         String[] selectionArgs = { accountNo };
-        int count = db.update(dbHelper.TABLE_NAME_TRANSACTION, values, selection, selectionArgs);
+        int count = db.update(dbHelper.TABLE_NAME_ACCOUNT, values, selection, selectionArgs);
     }
 }
